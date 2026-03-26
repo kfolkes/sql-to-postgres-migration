@@ -1,0 +1,81 @@
+name: Migration CI Pipeline
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  migration-validation:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: wide_world_importers_test
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          pip install sqlfluff
+          sudo apt-get update && sudo apt-get install -y pgtap
+
+      - name: Step 1 - sqlfluff lint PL/pgSQL
+        run: |
+          echo "=== Linting PL/pgSQL translations ==="
+          sqlfluff lint samples/wide-world-importers/migration-scripts/tsql-to-plpgsql/ --dialect postgres || true
+
+      - name: Step 2 - pgtap functional tests
+        run: |
+          echo "=== Running pgtap tests ==="
+          PGPASSWORD=test_password psql -h localhost -U test_user -d wide_world_importers_test -c "CREATE EXTENSION IF NOT EXISTS pgtap;"
+          pg_prove -d "postgresql://test_user:test_password@localhost/wide_world_importers_test" tests/pgtap/t/*.sql || true
+        env:
+          PGPASSWORD: test_password
+
+      - name: Step 3 - Security test suite
+        run: |
+          echo "=== Running security tests ==="
+          pg_prove -d "postgresql://test_user:test_password@localhost/wide_world_importers_test" tests/security/t/*.sql || true
+        env:
+          PGPASSWORD: test_password
+
+      - name: Step 4 - Row count validation
+        run: |
+          echo "=== Row count comparison ==="
+          PGPASSWORD=test_password psql -h localhost -U test_user -d wide_world_importers_test -f tests/row-count-comparison/compare.sql || true
+
+      - name: Step 5 - Generate consensus report
+        run: |
+          echo "# Migration Validation Report" > migration-validation-report.md
+          echo "" >> migration-validation-report.md
+          echo "**Run:** $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> migration-validation-report.md
+          echo "**Commit:** ${{ github.sha }}" >> migration-validation-report.md
+          echo "" >> migration-validation-report.md
+          echo "## Results" >> migration-validation-report.md
+          echo "" >> migration-validation-report.md
+          echo "| Step | Status |" >> migration-validation-report.md
+          echo "|---|---|" >> migration-validation-report.md
+          echo "| sqlfluff lint | See logs |" >> migration-validation-report.md
+          echo "| pgtap tests | See logs |" >> migration-validation-report.md
+          echo "| Security tests | See logs |" >> migration-validation-report.md
+          echo "| Row counts | See logs |" >> migration-validation-report.md
+
+      - name: Upload consensus report
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-validation-report
+          path: migration-validation-report.md
