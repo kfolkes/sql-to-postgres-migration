@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.env
+*.env.local
+
+# DAB
+dab/.env
+
+# Build outputs
+bin/
+obj/
+dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Test results (keep templates, ignore generated)
+tests/performance/results/*.json
+!tests/performance/results/README.md
+
+# Security scan results (sensitive)
+security/sec-check-results/*.json
+
+# SSMS execution plans (large binary)
+benchmarks/ssms-plans/*.sqlplan
+
+# pgLoader state
+*.pgloader
