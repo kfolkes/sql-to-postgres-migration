@@ -36,10 +36,53 @@ flowchart LR
 
 | Tool | Install | Purpose |
 |---|---|---|
+| Docker Desktop | [docker.com/products/docker-desktop](https://docker.com/products/docker-desktop) | Run SQL Server + PostgreSQL locally |
 | VS Code | [code.visualstudio.com](https://code.visualstudio.com) | IDE |
 | MSSQL Extension | `ext install ms-mssql.mssql` | Source DB inspection |
-| PostgreSQL Extension | `ext install ckolkman.vscode-postgres` | Target DB validation |
+| PostgreSQL Extension | `ext install ms-ossdata.vscode-pgsql` | Target DB validation |
 | GitHub Copilot | `ext install github.copilot` | Agent orchestration |
+
+### Local Database Setup (Docker)
+
+Spin up SQL Server 2022 + PostgreSQL 16 with WideWorldImporters pre-loaded:
+
+```powershell
+# One-click: starts containers, downloads backup (~120MB), restores database
+.\scripts\setup-local-env.ps1
+```
+
+Or step by step:
+
+```powershell
+# 1. Start containers
+docker compose up -d
+
+# 2. Wait for SQL Server health check
+docker compose ps   # both should show "healthy"
+
+# 3. Restore WideWorldImporters (downloads .bak on first run)
+.\scripts\setup-local-env.ps1
+```
+
+| Service | Host | Port | User | Password | Database |
+|---|---|---|---|---|---|
+| SQL Server 2022 | localhost | 1433 | sa | Str0ngP@ssw0rd! | WideWorldImporters |
+| PostgreSQL 16 | localhost | 5432 | wwi_user | Str0ngP@ssw0rd! | wide_world_importers |
+
+> **Note:** Passwords are in `.env` (gitignored). Change them for anything beyond local dev.
+
+```powershell
+# Stop containers (data persists in Docker volumes)
+docker compose down
+
+# Full reset (deletes volumes + data)
+docker compose down -v
+```
+
+### Optional CLI Tools
+
+| Tool | Install | Purpose |
+|---|---|---|
 | .NET 8+ Runtime | [get.dot.net](https://get.dot.net) | DAB CLI |
 | DAB CLI | `dotnet tool install microsoft.dataapibuilder -g` | API layer + MCP |
 | pgLoader | [pgloader.io](https://pgloader.io) | Bulk data migration |

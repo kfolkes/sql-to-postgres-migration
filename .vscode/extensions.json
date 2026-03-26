@@ -1,7 +1,7 @@
 {
   "recommendations": [
     "ms-mssql.mssql",
-    "ckolkman.vscode-postgres",
+    "ms-ossdata.vscode-pgsql",
     "github.copilot",
     "github.copilot-chat",
     "ms-azuretools.vscode-docker"

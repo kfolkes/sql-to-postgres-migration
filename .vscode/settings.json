@@ -5,9 +5,20 @@
     "**/node_modules": true
   },
   "sqlfluff.dialect": "postgres",
-  "mssql.connections": [],
+  "mssql.connections": [
+    {
+      "server": "localhost,1433",
+      "database": "WideWorldImporters",
+      "authenticationType": "SqlLogin",
+      "user": "sa",
+      "password": "",
+      "savePassword": false,
+      "profileName": "WWI-Local-Docker"
+    }
+  ],
   "files.associations": {
     "*.sql": "sql",
     "*.pgsql": "sql"
-  }
+  },
+  "chat.tools.terminal.ignoreDefaultAutoApproveRules": true
 }

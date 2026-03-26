@@ -6,6 +6,9 @@ node_modules/
 # DAB
 dab/.env
 
+# Local database data (cached backups, Docker volumes)
+data/
+
 # Build outputs
 bin/
 obj/
