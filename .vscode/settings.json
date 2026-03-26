@@ -1,0 +1,13 @@
+{
+  "editor.formatOnSave": true,
+  "files.exclude": {
+    "**/.git": true,
+    "**/node_modules": true
+  },
+  "sqlfluff.dialect": "postgres",
+  "mssql.connections": [],
+  "files.associations": {
+    "*.sql": "sql",
+    "*.pgsql": "sql"
+  }
+}

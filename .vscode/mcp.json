@@ -1,0 +1,13 @@
+{
+  "servers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
+    },
+    "dab": {
+      "type": "http",
+      "url": "http://localhost:5000/mcp",
+      "description": "Data API Builder MCP Server - provides deterministic CRUD tools for the migration database (SQL Server or PostgreSQL depending on config)"
+    }
+  }
+}
