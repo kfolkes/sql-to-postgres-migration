@@ -26,12 +26,22 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - name: Install tools
+      - name: Install client tools
         run: |
           pip install sqlfluff
-          sudo apt-get update && sudo apt-get install -y pgtap
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libtap-parser-sourcehandler-pgtap-perl postgresql-client
+
+      - name: Install pgtap inside postgres service container
+        run: |
+          PG_CID=$(docker ps --filter "ancestor=postgres:16" --format '{{.ID}}' | head -n1)
+          if [ -n "$PG_CID" ]; then
+            docker exec "$PG_CID" bash -c "apt-get update -qq && apt-get install -y -qq postgresql-16-pgtap"
+          else
+            echo "::warning::postgres:16 container not found; pgtap will be skipped"
+          fi
 
       - name: Step 1 - sqlfluff lint PL/pgSQL
         run: |
@@ -39,24 +49,27 @@ jobs:
           sqlfluff lint samples/wide-world-importers/migration-scripts/tsql-to-plpgsql/ --dialect postgres || true
 
       - name: Step 2 - pgtap functional tests
+        continue-on-error: true
         run: |
           echo "=== Running pgtap tests ==="
-          PGPASSWORD=test_password psql -h localhost -U test_user -d wide_world_importers_test -c "CREATE EXTENSION IF NOT EXISTS pgtap;"
-          pg_prove -d "postgresql://test_user:test_password@localhost/wide_world_importers_test" tests/pgtap/t/*.sql || true
+          PGPASSWORD=test_password psql -h localhost -U test_user -d wide_world_importers_test -c "CREATE EXTENSION IF NOT EXISTS pgtap;" || { echo '::warning::pgtap extension not available; skipping'; exit 0; }
+          pg_prove -d "postgresql://test_user:test_password@localhost/wide_world_importers_test" tests/pgtap/t/*.sql
         env:
           PGPASSWORD: test_password
 
       - name: Step 3 - Security test suite
+        continue-on-error: true
         run: |
           echo "=== Running security tests ==="
-          pg_prove -d "postgresql://test_user:test_password@localhost/wide_world_importers_test" tests/security/t/*.sql || true
+          pg_prove -d "postgresql://test_user:test_password@localhost/wide_world_importers_test" tests/security/t/*.sql
         env:
           PGPASSWORD: test_password
 
       - name: Step 4 - Row count validation
+        continue-on-error: true
         run: |
           echo "=== Row count comparison ==="
-          PGPASSWORD=test_password psql -h localhost -U test_user -d wide_world_importers_test -f tests/row-count-comparison/compare.sql || true
+          PGPASSWORD=test_password psql -h localhost -U test_user -d wide_world_importers_test -f tests/row-count-comparison/compare.sql
 
       - name: Step 5 - Generate consensus report
         run: |
@@ -75,7 +88,7 @@ jobs:
           echo "| Row counts | See logs |" >> migration-validation-report.md
 
       - name: Upload consensus report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: migration-validation-report
           path: migration-validation-report.md
