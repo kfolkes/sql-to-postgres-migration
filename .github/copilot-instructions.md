@@ -8,12 +8,13 @@ A **language-agnostic SQL Server to PostgreSQL migration accelerator** using mul
 
 ```
 .github/                        # Copilot orchestration (agent, skill, prompt, rules)
+.devcontainer/                  # One-click Codespaces / VS Code dev container
 dab/                            # Data API Builder configs (SQL Server, PostgreSQL, Fabric)
 docs/                           # Generated phase result documents
 tests/                          # Security, performance, pgtap, row-count tests
 benchmarks/                     # HammerDB + pgbench configs and results
 security/                       # Security baselines and hardening guides
-scripts/                        # PowerShell automation scripts
+scripts/                        # Bash automation scripts (canonical public path)
 samples/wide-world-importers/   # WideWorldImporters demo database assets
 reference/                      # T-SQL to PL/pgSQL cheatsheet, Azure best practices
 templates/                      # Reusable pgLoader and Fabric config templates
@@ -27,7 +28,6 @@ templates/                      # Reusable pgLoader and Fabric config templates
 - **Target: Azure Database for PostgreSQL Flexible Server.** Always use Entra ID passwordless auth.
 - **Document the why.** Every type, index, and SP translation must include reasoning.
 - **Track results.** Every test run produces timestamped JSON. Trending is auto-generated.
-- **DBA persona.** Demo script and sales material use DBA language and pain points.
 
 ## The 12 Tools
 
@@ -44,16 +44,25 @@ templates/                      # Reusable pgLoader and Fabric config templates
 11. Azure Premigration Validation - connectivity/schema checks
 12. Copilot Agent - orchestrates all tools
 
-## Key Commands
+## Key Commands (canonical bash flow)
 
-```powershell
+```bash
 # One-click migration via Copilot Chat
-# /db-migrate samples/wide-world-importers
+# /db-migrate                           # BYO endpoint (uses .env)
+# /db-migrate samples/wide-world-importers   # Local Docker demo
 
-# Manual execution
-.\scripts\run-assessment.ps1
-.\scripts\run-migration.ps1
-.\scripts\validate-migration.ps1
+# Demo: WideWorldImporters local Docker
+bash scripts/setup-local-env.sh         # Start containers + restore .bak
+bash scripts/migrate-data.sh            # Schema + data + functions + row-count check
+
+# BYO endpoint: any customer SQL Server -> any PostgreSQL
+cp .env.example .env                    # Edit SQLSERVER_* and PG_* values
+bash scripts/migrate-endpoint.sh        # pgloader-based generic transfer
+
+# Manual phases
+bash scripts/run-assessment.sh --connection-string "..."
+bash scripts/run-migration.sh
+bash scripts/validate-migration.sh
 
 # DAB (Data API Builder)
 dab start --config dab/dab-config-sqlserver.json
@@ -61,9 +70,11 @@ dab start --config dab/dab-config-postgres.json
 
 # Tests
 pg_prove -d test_db tests/pgtap/t/
-.\tests\performance\run-performance-tests.sh
-.\tests\security\run-security-tests.sh
+bash tests/performance/run-performance-tests.sh
+bash tests/security/run-security-tests.sh
 ```
+
+> Bash is the canonical, public path. PowerShell variants exist locally for Windows-only personal use and are gitignored.
 
 ## When Editing Agent, Skill, or Prompt Files
 

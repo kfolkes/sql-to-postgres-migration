@@ -35,3 +35,16 @@ benchmarks/ssms-plans/*.sqlplan
 
 # pgLoader state
 *.pgloader
+
+# Internal authoring notes (kept local, never published)
+DEMO-SCRIPT.md
+SALES-PITCH-DBA.md
+SALES-PITCH-*.md
+*.internal.md
+
+# PowerShell variants kept local (bash is the canonical public path)
+scripts/*.ps1
+
+# Temp / scratch
+.tmp/
+*.log

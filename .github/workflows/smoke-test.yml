@@ -1,0 +1,51 @@
+name: Smoke test (end-to-end migration)
+
+# Verifies the demo flow that workshop attendees and live-demo viewers run.
+# This is the canonical "does the one-click experience still work?" test.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - ".devcontainer/**"
+      - "docker-compose.yml"
+      - "samples/**"
+      - "scripts/docker/**"
+      - ".env.example"
+      - ".github/workflows/smoke-test.yml"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  end-to-end:
+    name: setup-local-env + migrate-data
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SQL Server tools (sqlcmd)
+        run: |
+          curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
+            | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/ubuntu/$(lsb_release -rs)/prod $(lsb_release -cs) main" \
+            | sudo tee /etc/apt/sources.list.d/microsoft-prod.list > /dev/null
+          sudo apt-get update -qq
+          sudo ACCEPT_EULA=Y apt-get install -y -qq mssql-tools18 unixodbc-dev postgresql-client
+          echo "/opt/mssql-tools18/bin" >> $GITHUB_PATH
+
+      - name: Prepare .env
+        run: cp .env.example .env
+
+      - name: Run setup-local-env.sh
+        run: bash scripts/setup-local-env.sh
+
+      - name: Run migrate-data.sh
+        run: bash scripts/migrate-data.sh
+
+      - name: Tear down containers
+        if: always()
+        run: docker compose down -v

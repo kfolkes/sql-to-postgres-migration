@@ -1,116 +1,143 @@
+<!--
+---
+page_type: sample
+languages:
+  - sql
+  - tsql
+  - plpgsql
+  - bash
+products:
+  - azure
+  - azure-database-postgresql
+  - azure-sql-database
+  - github-copilot
+  - microsoft-fabric
+  - vs-code
+name: SQL Server to PostgreSQL Migration Accelerator
+description: Reusable, one-click migration accelerator from SQL Server to Azure Database for PostgreSQL Flexible Server, orchestrated by a Copilot agent with multi-tool cross-validation.
+urlFragment: sql-to-postgres-migration
+---
+-->
+
 # SQL Server to PostgreSQL Migration Accelerator
 
-A **language-agnostic, multi-tool** database migration accelerator that modernizes SQL Server databases to Azure Database for PostgreSQL Flexible Server. Built for DBAs and SSEs with a one-click Copilot agent.
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kfolkes/sql-to-postgres-migration?quickstart=1)
+[![Open in Dev Containers](https://img.shields.io/static/v1?label=Dev%20Container&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/kfolkes/sql-to-postgres-migration)
+[![Smoke test](https://github.com/kfolkes/sql-to-postgres-migration/actions/workflows/smoke-test.yml/badge.svg)](https://github.com/kfolkes/sql-to-postgres-migration/actions/workflows/smoke-test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+A **reusable, one-click** migration accelerator that moves SQL Server databases to Azure Database for PostgreSQL Flexible Server. Built for database teams. Orchestrated by a GitHub Copilot agent. Validated by 12 cross-checking tools.
+
+> **Live demo:** open the badge above to launch a fully configured Codespace with SQL Server 2022 + PostgreSQL 16 + WideWorldImporters pre-loaded — then ask Copilot Chat: `/db-migrate`.
 
 ```mermaid
 flowchart LR
-    subgraph Source["Source: SQL Server"]
-        SS[(SQL Server\nWideWorldImporters\n15+ tables, 30+ SPs)]
+    subgraph Source["Source: any SQL Server"]
+        SS[(Azure SQL / on-prem<br/>SQL 2016+)]
     end
-    
-    subgraph Tools["12-Tool Migration Pipeline"]
-        direction TB
-        T1[MSSQL Extension]
-        T2[ora2pg]
-        T3[pgLoader]
-        T4[DAB MCP]
-        T5[sqlfluff]
-        T6[pgtap]
-        T7[HammerDB]
-        T8[sec-check]
+    subgraph Agent["Copilot Agent (12 tools, 5 phases)"]
+        T1[Assess]
+        T2[Translate]
+        T3[Migrate]
+        T4[Validate]
+        T5[Optimize]
     end
-    
     subgraph Target["Target: Azure PostgreSQL"]
-        PG[(Azure PG\nFlexible Server\nEntra ID Auth)]
+        PG[(Flex Server<br/>Entra ID auth)]
     end
-    
-    SS --> Tools --> PG
-    
+    SS --> Agent --> PG
     style SS fill:#cc2927,color:#fff
     style PG fill:#336791,color:#fff
 ```
 
-## Quick Start
+---
 
-### Prerequisites
+## Two ways to use it
 
-| Tool | Install | Purpose |
+| Mode | When to use | What you run |
 |---|---|---|
-| Docker Desktop | [docker.com/products/docker-desktop](https://docker.com/products/docker-desktop) | Run SQL Server + PostgreSQL locally |
-| VS Code | [code.visualstudio.com](https://code.visualstudio.com) | IDE |
-| MSSQL Extension | `ext install ms-mssql.mssql` | Source DB inspection |
-| PostgreSQL Extension | `ext install ms-ossdata.vscode-pgsql` | Target DB validation |
-| GitHub Copilot | `ext install github.copilot` | Agent orchestration |
+| **Demo** — WideWorldImporters local Docker | First time, workshops, live demos | `/db-migrate samples/wide-world-importers` (or just click the badge) |
+| **BYO Endpoint** — your own SQL Server → your own PostgreSQL | Real customer migrations | Edit [.env](.env.example) → `/db-migrate` (no argument) |
 
-### Local Database Setup (Docker)
+Both modes use the **same agent, same skill, same validation gates** — only the connection strings change.
 
-Spin up SQL Server 2022 + PostgreSQL 16 with WideWorldImporters pre-loaded:
+---
 
-```powershell
-# One-click: starts containers, downloads backup (~120MB), restores database
-.\scripts\setup-local-env.ps1
+## Quickstart (5 minutes, zero local install)
+
+1. Click **[Open in GitHub Codespaces](https://codespaces.new/kfolkes/sql-to-postgres-migration?quickstart=1)** above.
+2. Wait ~3 minutes — the dev container installs `psql`, `sqlcmd`, starts SQL Server 2022 + PostgreSQL 16, and restores WideWorldImporters automatically.
+3. Open Copilot Chat and run:
+   ```
+   /db-migrate samples/wide-world-importers
+   ```
+4. Watch the agent execute Phases 1–3 and produce result docs in [docs/](docs/).
+
+That's the live-demo path. For real customer migrations, follow [Bring your own endpoint](#bring-your-own-endpoint) below.
+
+---
+
+## Local quickstart (Docker required)
+
+Open a bash shell in the repo (Codespace, dev container, WSL, macOS, or Linux):
+
+```bash
+cp .env.example .env                   # defaults are safe for local demo
+bash scripts/setup-local-env.sh        # starts containers + restores WideWorldImporters (~3 min first run)
+bash scripts/migrate-data.sh           # schema + 31 tables + 6 functions + row-count validation
 ```
 
-Or step by step:
+Successful output ends with:
 
-```powershell
-# 1. Start containers
-docker compose up -d
-
-# 2. Wait for SQL Server health check
-docker compose ps   # both should show "healthy"
-
-# 3. Restore WideWorldImporters (downloads .bak on first run)
-.\scripts\setup-local-env.ps1
+```
+[5/5] Validating row counts...
+  Row count validation: 31 matched, 0 mismatched out of 31 tables
+  Migration Complete!
 ```
 
 | Service | Host | Port | User | Password | Database |
 |---|---|---|---|---|---|
-| SQL Server 2022 | localhost | 1433 | sa | Str0ngP@ssw0rd! | WideWorldImporters |
-| PostgreSQL 16 | localhost | 5432 | wwi_user | Str0ngP@ssw0rd! | wide_world_importers |
+| SQL Server 2022 | `localhost` | 1433 | `sa` | see [.env.example](.env.example) | `WideWorldImporters` |
+| PostgreSQL 16 (PostGIS) | `localhost` | 5432 | `wwi_user` | see [.env.example](.env.example) | `wide_world_importers` |
 
-> **Note:** Passwords are in `.env` (gitignored). Change them for anything beyond local dev.
-
-```powershell
-# Stop containers (data persists in Docker volumes)
-docker compose down
-
-# Full reset (deletes volumes + data)
-docker compose down -v
+```bash
+docker compose down       # stop containers (data persists)
+docker compose down -v    # full reset (deletes volumes)
 ```
 
-### Optional CLI Tools
+---
 
-| Tool | Install | Purpose |
-|---|---|---|
-| .NET 8+ Runtime | [get.dot.net](https://get.dot.net) | DAB CLI |
-| DAB CLI | `dotnet tool install microsoft.dataapibuilder -g` | API layer + MCP |
-| pgLoader | [pgloader.io](https://pgloader.io) | Bulk data migration |
-| ora2pg | [ora2pg.darold.net](https://ora2pg.darold.net) | Assessment + auto-conversion |
-| HammerDB | [hammerdb.com](https://hammerdb.com) | Cross-platform benchmarking |
-| sqlfluff | `pip install sqlfluff` | PL/pgSQL linting |
-| pgtap | [pgtap.org](https://pgtap.org) | PostgreSQL unit testing |
-| SSMS 22 | [learn.microsoft.com/ssms](https://learn.microsoft.com/ssms) | Execution plan baseline |
+## Bring your own endpoint
 
-### One-Click Migration
+To migrate any customer SQL Server to any PostgreSQL — Azure Flex Server, AWS RDS, Cloud SQL, on-prem — set the connection variables in [.env](.env.example) and run a single script:
 
-1. Open this repo in VS Code
-2. Open Copilot Chat
-3. Run: `/db-migrate samples/wide-world-importers`
-4. The agent executes all 5 phases with multi-tool cross-validation
+```bash
+cp .env.example .env
+# Edit .env:
+#   SQLSERVER_HOST='mycorp-sql.database.windows.net'
+#   SQLSERVER_DB='ProductionDb'
+#   SQLSERVER_USER='migrate_user'
+#   SQLSERVER_PASSWORD='...'
+#   PG_HOST='mycorp-pg.postgres.database.azure.com'
+#   PG_DB='production_db'
+#   PG_USER='migrate_user'
+#   PG_PASSWORD='...'
 
-### Manual Phase Execution
-
-```powershell
-# Phase 1: Assess source database
-.\scripts\run-assessment.ps1 -ConnectionString "Server=localhost;Database=WideWorldImporters;Trusted_Connection=True;"
-
-# Phase 2: Execute migration
-.\scripts\run-migration.ps1
-
-# Phase 3: Validate results
-.\scripts\validate-migration.ps1
+bash scripts/migrate-endpoint.sh --dry-run    # validate connectivity + type mappings
+bash scripts/migrate-endpoint.sh              # perform migration via pgloader
 ```
+
+The same Copilot agent works on the customer endpoint:
+
+```
+/db-migrate
+```
+
+(no argument → BYO mode → reads `.env`).
+
+Required tools: `pgloader`, `psql`, `sqlcmd`. All three are pre-installed in the dev container.
+
+---
 
 ## Architecture
 
@@ -122,89 +149,149 @@ flowchart TB
         D1[DAB init] --> |entities| C1
         C1 --> |YES| P1[docs/01-source-assessment.md]
     end
-    
     subgraph Phase2["Phase 2: Migration"]
-        PG2[pgLoader dry-run] --> |validate| C2{Consensus?}
-        O2[ora2pg convert] --> |PL/pgSQL| C2
-        CP2[Copilot translate] --> |PL/pgSQL| C2
+        PG2[pgLoader dry-run] --> C2{Consensus?}
+        O2[ora2pg convert] --> C2
+        CP2[Copilot translate PL/pgSQL] --> C2
         C2 --> |YES| P2[docs/02-migration-execution.md]
     end
-    
     subgraph Phase3["Phase 3: Validation"]
-        PT3[pgtap tests] --> |functional| C3{Consensus?}
-        DA3[DAB API regression] --> |API layer| C3
-        RC3[Row-count compare] --> |data integrity| C3
-        HM3[HammerDB TPC-C] --> |performance| C3
-        SC3[sec-check delta] --> |security| C3
+        PT3[pgtap tests] --> C3{Consensus?}
+        DA3[DAB API regression] --> C3
+        RC3[Row-count compare] --> C3
+        HM3[HammerDB TPC-C] --> C3
+        SC3[sec-check delta] --> C3
         C3 --> |YES| P3[docs/03-validation-report.md]
     end
-    
     Phase1 --> Phase2 --> Phase3
-    
     style C1 fill:#2ecc71,color:#fff
     style C2 fill:#2ecc71,color:#fff
     style C3 fill:#2ecc71,color:#fff
 ```
 
-## Multi-Tool Redundancy
-
-Every critical step is validated by 2-3 independent tools:
+Every critical step is validated by 2–3 independent tools — no single tool decides:
 
 | Step | Tool 1 | Tool 2 | Tool 3 |
 |---|---|---|---|
-| Schema Discovery | MSSQL ext | ora2pg | DAB |
-| SP Translation | Copilot | ora2pg | sqlfluff + pgtap |
-| Data Migration | pgLoader | DAB API regression | Row counts |
-| Performance | SSMS 22 plans | HammerDB TPC-C | pgbench |
+| Schema discovery | MSSQL ext | ora2pg | DAB |
+| SP translation | Copilot | ora2pg | sqlfluff + pgtap |
+| Data migration | pgLoader | DAB API regression | row counts |
+| Performance | SSMS plans | HammerDB TPC-C | pgbench |
 | Security | sec-check | Defender for DBs | CodeQL |
 
-## Repo Structure
+---
+
+## What's in the box
 
 ```
 sql-to-postgres-migration/
-|-- .github/
-|   |-- agents/db-migration.agent.md      # Migration agent
-|   |-- skills/sql-to-postgres/SKILL.md   # Single source of truth
-|   |-- prompts/db-migrate.prompt.md      # One-click prompt
-|   |-- rules/database-rules.md           # Architecture rules
-|   |-- workflows/migration-ci.yml        # CI pipeline
-|-- .vscode/
-|   |-- mcp.json                          # GitHub MCP + DAB MCP
-|   |-- extensions.json                   # Recommended extensions
-|-- dab/                                  # Data API Builder configs
-|-- docs/                                 # Generated phase results
-|-- tests/                                # Security, performance, pgtap
-|-- benchmarks/                           # HammerDB + pgbench configs
-|-- security/                             # Security baselines + hardening
-|-- scripts/                              # PowerShell automation
-|-- samples/wide-world-importers/         # Demo database assets
-|-- reference/                            # Cheatsheets + Azure best practices
-|-- templates/                            # Reusable config templates
+├── .devcontainer/                # One-click Codespaces / dev container
+├── .github/
+│   ├── agents/db-migration.agent.md       # The reusable migration agent
+│   ├── prompts/db-migrate.prompt.md       # /db-migrate one-click prompt
+│   ├── skills/sql-to-postgres/SKILL.md    # Single source of truth for orchestration
+│   ├── workflows/                         # CI: smoke test + migration validation
+│   └── ISSUE_TEMPLATE/                    # Bug / feature templates
+├── scripts/
+│   ├── setup-local-env.sh        # Demo: start containers + restore .bak
+│   ├── migrate-data.sh           # Demo: WideWorldImporters → PostgreSQL
+│   ├── migrate-endpoint.sh       # BYO: any SQL Server → any PostgreSQL (pgloader)
+│   ├── run-assessment.sh         # Phase 1 helper
+│   ├── run-migration.sh          # Phase 2 helper
+│   └── validate-migration.sh     # Phase 3 helper
+├── samples/wide-world-importers/ # Microsoft demo DB assets + pre-translated PL/pgSQL
+├── dab/                          # Data API Builder configs (SQL, PG, Fabric)
+├── tests/
+│   ├── pgtap/                    # PL/pgSQL functional equivalence tests
+│   ├── security/                 # 10 security tests (sec-001..010)
+│   ├── performance/              # 10 perf tests (perf-001..010)
+│   └── row-count-comparison/     # Source ↔ target row count validation
+├── benchmarks/hammerdb/          # TPC-C scripts (both SQL and PG)
+├── benchmarks/pgbench/           # pgbench load test
+├── reference/
+│   ├── tsql-to-plpgsql-cheatsheet.md
+│   └── azure-architecture-center.md
+├── docs/                         # Generated phase result docs
+├── docker-compose.yml
+├── .env.example                  # Two-mode env template (demo + BYO)
+└── .gitattributes                # Enforces LF line endings (cross-platform)
 ```
 
-## Demo Database: WideWorldImporters
+---
 
-Microsoft's official SQL Server sample database. Ideal for DBA demos:
-- **15+ tables** across Sales, Purchasing, Warehouse, Application schemas
-- **30+ stored procedures** with complex business logic
+## Optional CLI tools (for advanced workflows)
+
+| Tool | Install | Purpose |
+|---|---|---|
+| .NET 8+ | <https://get.dot.net> | DAB CLI |
+| DAB CLI | `dotnet tool install microsoft.dataapibuilder -g` | API layer + MCP |
+| pgLoader | `apt install pgloader` / `brew install pgloader` | BYO endpoint migrations |
+| ora2pg | <https://ora2pg.darold.net> | Independent assessment + auto-conversion |
+| HammerDB | <https://hammerdb.com> | Cross-platform TPC-C benchmarking |
+| sqlfluff | `pip install sqlfluff` | PL/pgSQL linting |
+| pgTAP | `apt install pgtap` | PostgreSQL unit testing |
+| SSMS 22 | <https://learn.microsoft.com/ssms> | Source execution-plan baseline |
+
+All of these are **pre-installed in the dev container** so workshop attendees never have to set up tooling.
+
+---
+
+## Demo database: WideWorldImporters
+
+Microsoft's official SQL Server sample database. Ideal for showing migration risk because it contains:
+
+- **31 tables** across `Application`, `Purchasing`, `Sales`, `Warehouse`, `Website`
+- **6 stored procedures** (translated to PL/pgSQL functions in [samples/wide-world-importers/migration-scripts/tsql-to-plpgsql/](samples/wide-world-importers/migration-scripts/tsql-to-plpgsql/))
 - **Temporal tables** (system-versioned)
-- **JSON columns** (custom data)
-- **HIERARCHYID** and **GEOGRAPHY** types
-- **Triggers** and **computed columns**
+- **JSON columns**, **HIERARCHYID**, **GEOGRAPHY** types
+- **~1.06 million rows** end-to-end
+- Source backup: <https://aka.ms/WideWorldImporters>
 
-Download: [WideWorldImporters .bak](https://aka.ms/WideWorldImporters)
+Validated migration result (current `main`):
 
-## Key Metrics
+```
+Tables created:    31
+Data transferred:  31/31 tables
+Functions:         6 PL/pgSQL functions
+Row validation:    31/31 matched
+```
 
-| Metric | Value |
-|---|---|
-| T-SQL patterns analyzed | 24 incompatible patterns |
-| Security tests | 10 (sec-001 to sec-010) |
-| Performance tests | 10 (perf-001 to perf-010) |
-| Tools in pipeline | 12 cross-validating |
-| MCP servers | 2 (GitHub + DAB) |
-| Phases | 5 (3 core + 2 optional Fabric) |
+---
+
+## Roadmap / phases
+
+| Phase | Status | Output |
+|---|---|---|
+| 1. Source assessment | ✅ stable | [docs/01-source-assessment.md](docs/01-source-assessment.md) |
+| 2. Migration execution | ✅ stable | [docs/02-migration-execution.md](docs/02-migration-execution.md) |
+| 3. Validation & testing | ✅ stable | [docs/03-validation-report.md](docs/03-validation-report.md) |
+| 4. Microsoft Fabric integration | 🟡 optional | [docs/04-fabric-integration.md](docs/04-fabric-integration.md) |
+| 5. Data agent + GraphQL | 🟡 optional | [docs/05-data-agent-setup.md](docs/05-data-agent-setup.md) |
+
+---
+
+## Resources
+
+- [Azure Database for PostgreSQL Flexible Server](https://learn.microsoft.com/azure/postgresql/flexible-server/)
+- [Azure Database Migration guide: SQL Server → PostgreSQL](https://learn.microsoft.com/data-migration/sql-server/postgresql/)
+- [pgLoader documentation](https://pgloader.io/)
+- [ora2pg documentation](https://ora2pg.darold.net/)
+- [Data API Builder](https://learn.microsoft.com/azure/data-api-builder/)
+- [GitHub Copilot agents & skills](https://docs.github.com/copilot)
+
+---
+
+## Contributing & support
+
+- See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev workflow.
+- Report bugs via [Issues](../../issues/new/choose).
+- Security disclosures: please use [MSRC](https://msrc.microsoft.com/create-report) (see [SECURITY.md](SECURITY.md)).
+- This project follows the [Microsoft Open Source Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Trademarks
+
+This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft trademarks or logos is subject to and must follow [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/legal/intellectualproperty/trademarks/usage/general). Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship. Any use of third-party trademarks or logos is subject to those third parties' policies.
 
 ## License
 
-MIT
+[MIT](LICENSE)

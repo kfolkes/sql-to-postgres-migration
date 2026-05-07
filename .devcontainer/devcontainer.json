@@ -1,0 +1,36 @@
+{
+  "name": "SQL-to-PostgreSQL Migration Lab",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "dockerDashComposeVersion": "v2"
+    }
+  },
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "storage": "32gb"
+  },
+  "forwardPorts": [1433, 5432],
+  "portsAttributes": {
+    "1433": { "label": "SQL Server", "onAutoForward": "silent" },
+    "5432": { "label": "PostgreSQL", "onAutoForward": "silent" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-mssql.mssql",
+        "ms-ossdata.vscode-pgsql",
+        "github.copilot",
+        "github.copilot-chat",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/postCreate.sh",
+  "postStartCommand": "bash scripts/setup-local-env.sh",
+  "remoteUser": "vscode"
+}

@@ -35,11 +35,10 @@ All orchestration lives here. `docs/` only holds generated results.
 
 ## When to Use
 
-- DBA or SSE needs to migrate SQL Server to Azure Database for PostgreSQL Flexible Server.
+- A team needs to migrate SQL Server to Azure Database for PostgreSQL Flexible Server.
 - Migration must be language-stack agnostic (database layer only, no application code).
 - Requires multi-tool redundancy - no single tool does the upgrade.
 - Needs tracked security and performance test results with iteration trending.
-- Audience is SSEs and DBAs - demo must sell the "why".
 
 ## Core Philosophy
 

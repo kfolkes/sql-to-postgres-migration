@@ -21,7 +21,7 @@ Microsoft's official SQL Server sample database used as the demo target for this
 
 ## Why WideWorldImporters?
 
-Ideal for DBA migration demos because it contains:
+Ideal for migration demos because it contains:
 - **Complex stored procedures** with business logic
 - **Temporal tables** (system-versioned) that require special migration handling
 - **HIERARCHYID** columns that have no direct PostgreSQL equivalent
@@ -31,12 +31,22 @@ Ideal for DBA migration demos because it contains:
 
 ## Setup
 
-```powershell
-# Restore the backup
-RESTORE DATABASE WideWorldImporters
-FROM DISK = 'C:\path\to\WideWorldImporters-Full.bak'
-WITH MOVE 'WWI_Primary' TO 'C:\data\WideWorldImporters.mdf',
-     MOVE 'WWI_UserData' TO 'C:\data\WideWorldImporters_UserData.ndf',
-     MOVE 'WWI_Log' TO 'C:\data\WideWorldImporters.ldf',
-     MOVE 'WWI_InMemory_Data_1' TO 'C:\data\WideWorldImporters_InMemory.ndf';
+The recommended way is the one-click setup script which runs Docker containers and restores the backup automatically. From the dev container (or any bash shell with Docker available):
+
+```bash
+bash scripts/setup-local-env.sh
+bash scripts/migrate-data.sh
 ```
+
+If you need to restore manually inside the SQL Server Docker container:
+
+```sql
+RESTORE DATABASE WideWorldImporters
+FROM DISK = '/backup/WideWorldImporters-Full.bak'
+WITH MOVE 'WWI_Primary' TO '/var/opt/mssql/data/WideWorldImporters.mdf',
+     MOVE 'WWI_UserData' TO '/var/opt/mssql/data/WideWorldImporters_UserData.ndf',
+     MOVE 'WWI_Log' TO '/var/opt/mssql/data/WideWorldImporters.ldf',
+     MOVE 'WWI_InMemory_Data_1' TO '/var/opt/mssql/data/WideWorldImporters_InMemory.ndf';
+```
+
+> The paths above are for the SQL Server Docker container (`wwi-sqlserver`). The backup is bind-mounted at `/backup/` from the `./data/` directory on your host.

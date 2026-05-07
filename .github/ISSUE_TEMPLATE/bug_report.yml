@@ -1,0 +1,57 @@
+name: Bug report
+description: Something is broken in the migration accelerator
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug! Please fill in the details below so we can reproduce it.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear and concise description of the bug.
+      placeholder: |
+        When I ran `bash scripts/migrate-data.sh` against my SQL Server, ...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the repo in Codespaces (or run `bash scripts/setup-local-env.sh` locally)
+        2. Run `bash scripts/migrate-data.sh`
+        3. Observe the error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - GitHub Codespaces (default dev container)
+        - Local dev container (VS Code Dev Containers)
+        - WSL2 Ubuntu
+        - Linux (native)
+        - macOS
+        - Windows + Docker Desktop
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: source-db
+    attributes:
+      label: Source SQL Server version
+      placeholder: "e.g. SQL Server 2022 (Docker), Azure SQL MI, on-prem SQL Server 2019"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / output
+      render: shell

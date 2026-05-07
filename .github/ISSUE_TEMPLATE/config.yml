@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question / discussion
+    url: https://github.com/kfolkes/sql-to-postgres-migration/discussions
+    about: Use Discussions for usage questions, demo guidance, or migration patterns.
+  - name: Security report
+    url: https://msrc.microsoft.com/create-report
+    about: Please do NOT open public issues for security vulnerabilities. Use MSRC.

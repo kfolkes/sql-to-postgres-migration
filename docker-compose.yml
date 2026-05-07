@@ -30,6 +30,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./scripts/docker/postgres-init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./data:/data
     healthcheck:
       test: pg_isready -U wwi_user -d wide_world_importers
       interval: 10s

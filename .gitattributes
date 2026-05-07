@@ -1,0 +1,35 @@
+# Force LF line endings for all shell-related and config files so they
+# work correctly inside dev containers / Codespaces (Linux) regardless of
+# whether they were edited on Windows.
+
+* text=auto eol=lf
+
+# Shell scripts must always be LF
+*.sh             text eol=lf
+*.bash           text eol=lf
+
+# Env / config files used by bash `source`
+.env             text eol=lf
+.env.example     text eol=lf
+.env.*           text eol=lf
+
+# Dev container files
+.devcontainer/** text eol=lf
+
+# Docker-related
+Dockerfile       text eol=lf
+docker-compose*.yml text eol=lf
+
+# SQL / DDL
+*.sql            text eol=lf
+
+# Markdown stays LF for cross-platform consistency
+*.md             text eol=lf
+
+# JSON
+*.json           text eol=lf
+
+# Treat backup / binary files as binary
+*.bak            binary
+*.png            binary
+*.jpg            binary
